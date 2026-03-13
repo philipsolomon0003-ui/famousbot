@@ -1,0 +1,145 @@
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Users, MessageSquare, Clock, Send, Activity, Settings, Zap, Shield, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface Stats {
+  groups: number;
+  sentMessages: number;
+  scheduledMessages: number;
+}
+
+export default function Home() {
+  const [stats, setStats] = useState<Stats>({ groups: 0, sentMessages: 0, scheduledMessages: 0 });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/stats');
+        
+        setStats({
+          groups: res.data.groups,
+          sentMessages: res.data.sentMessages,
+          scheduledMessages: res.data.scheduledMessages
+        });
+      } catch (err) {
+        console.error('Failed to fetch stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchStats();
+  }, []);
+
+  const statCards = [
+    { name: 'Total Groups', value: stats.groups, icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+    { name: 'Messages Sent', value: stats.sentMessages, icon: MessageSquare, color: 'text-green-600', bg: 'bg-green-100' },
+    { name: 'Pending Scheduled', value: stats.scheduledMessages, icon: Clock, color: 'text-orange-600', bg: 'bg-orange-100' },
+  ];
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-8 transition-colors">Dashboard Overview</h1>
+      
+      {loading ? (
+        <div className="flex justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <dl className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
+            {statCards.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.name}
+                  className="relative bg-white dark:bg-gray-800 pt-5 px-4 pb-12 sm:pt-6 sm:px-6 shadow rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 transition-colors duration-200"
+                >
+                  <dt>
+                    <div className={`absolute rounded-md p-3 ${item.bg} dark:bg-opacity-20`}>
+                      <Icon className={`h-6 w-6 ${item.color} dark:brightness-125`} aria-hidden="true" />
+                    </div>
+                    <p className="ml-16 text-sm font-medium text-gray-500 dark:text-gray-400 truncate">{item.name}</p>
+                  </dt>
+                  <dd className="ml-16 pb-6 flex items-baseline sm:pb-7">
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{item.value}</p>
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
+
+          {/* New Design Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            {/* Quick Actions */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+              <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+                <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center">
+                  <Zap className="h-5 w-5 mr-2 text-indigo-500" />
+                  Quick Actions
+                </h3>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 block">
+                <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-gray-700">
+                   <Link to="/composer" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
+                     <Send className="h-8 w-8 text-blue-500 group-hover:scale-110 transition-transform mb-3" />
+                     <p className="text-sm font-medium text-gray-900 dark:text-white">Broadcast Message</p>
+                     <p className="text-xs text-gray-500 mt-1">Send to all groups</p>
+                   </Link>
+                   <Link to="/groups" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
+                     <Users className="h-8 w-8 text-purple-500 group-hover:scale-110 transition-transform mb-3" />
+                     <p className="text-sm font-medium text-gray-900 dark:text-white">Manage Groups</p>
+                     <p className="text-xs text-gray-500 mt-1">Search and join</p>
+                   </Link>
+                   <Link to="/activity" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
+                     <Activity className="h-8 w-8 text-green-500 group-hover:scale-110 transition-transform mb-3" />
+                     <p className="text-sm font-medium text-gray-900 dark:text-white">View Logs</p>
+                     <p className="text-xs text-gray-500 mt-1">Check past broadcasts</p>
+                   </Link>
+                   <Link to="#" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block cursor-not-allowed opacity-80">
+                     <Settings className="h-8 w-8 text-orange-500 group-hover:scale-110 transition-transform mb-3 opacity-50" />
+                     <p className="text-sm font-medium text-gray-900 dark:text-white">Settings</p>
+                     <p className="text-xs text-gray-500 mt-1">Coming soon</p>
+                   </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* System Status / Welcome Card */}
+            <div className="relative rounded-xl shadow-sm overflow-hidden bg-gradient-to-br from-indigo-500 to-purple-600 p-8 text-white">
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white opacity-10 blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-24 w-24 rounded-full bg-white opacity-10 blur-xl"></div>
+              
+              <div className="relative z-10 flex flex-col h-full justify-center">
+                <div className="bg-white/20 w-12 h-12 rounded-lg flex items-center justify-center mb-6 backdrop-blur-sm shadow-sm ring-1 ring-white/20">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold mb-2 flex items-center">
+                  System Active <Sparkles className="h-5 w-5 ml-2 text-yellow-300" />
+                </h2>
+                <p className="text-indigo-100 text-sm leading-relaxed mb-6">
+                  Your MTProto session is securely connected. The userbot is running in the background and is ready to broadcast your messages to all registered groups and channels automatically.
+                </p>
+                
+                <div className="mt-auto">
+                   <div className="bg-black/20 rounded-lg p-4 backdrop-blur-sm border border-white/10 flex items-center justify-between">
+                     <div className="flex items-center">
+                       <span className="relative flex h-3 w-3 mr-3">
+                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                         <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                       </span>
+                       <span className="text-sm font-medium">Core Engine</span>
+                     </div>
+                     <span className="text-xs font-mono bg-white/20 px-2 py-1 rounded">Online</span>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

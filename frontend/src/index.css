@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* === MULTI-COLOR THEMES === */
+
+/* Midnight (Deep blue backdrops, blue accents) */
+html.theme-midnight {
+  --color-gray-50: var(--color-slate-50);
+  --color-gray-100: var(--color-slate-100);
+  --color-gray-200: var(--color-slate-200);
+  --color-gray-300: var(--color-slate-300);
+  --color-gray-400: var(--color-slate-400);
+  --color-gray-500: var(--color-slate-500);
+  --color-gray-600: var(--color-slate-600);
+  --color-gray-700: var(--color-slate-700);
+  --color-gray-800: var(--color-slate-800);
+  --color-gray-900: var(--color-slate-900);
+  --color-gray-950: var(--color-slate-950);
+
+  --color-indigo-50: var(--color-blue-50);
+  --color-indigo-100: var(--color-blue-100);
+  --color-indigo-200: var(--color-blue-200);
+  --color-indigo-300: var(--color-blue-300);
+  --color-indigo-400: var(--color-blue-400);
+  --color-indigo-500: var(--color-blue-500);
+  --color-indigo-600: var(--color-blue-600);
+  --color-indigo-700: var(--color-blue-700);
+  --color-indigo-800: var(--color-blue-800);
+  --color-indigo-900: var(--color-blue-900);
+  --color-indigo-950: var(--color-blue-950);
+}
+
+/* Hacker (True black backdrops, neon green accents) */
+html.theme-hacker {
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #262626;
+  --color-gray-800: #0a0a0a;
+  --color-gray-900: #000000;
+  --color-gray-950: #000000;
+
+  --color-indigo-50: var(--color-emerald-50);
+  --color-indigo-100: var(--color-emerald-100);
+  --color-indigo-200: var(--color-emerald-200);
+  --color-indigo-300: var(--color-emerald-300);
+  --color-indigo-400: var(--color-emerald-400);
+  --color-indigo-500: var(--color-emerald-500);
+  --color-indigo-600: var(--color-emerald-500); /* Boost brightness in dark mode */
+  --color-indigo-700: var(--color-emerald-600);
+  --color-indigo-800: var(--color-emerald-700);
+  --color-indigo-900: var(--color-emerald-800);
+  --color-indigo-950: var(--color-emerald-900);
+}
+
+/* Sunset (Warm dark backdrops, orange/amber accents) */
+html.theme-sunset {
+  --color-gray-50: var(--color-stone-50);
+  --color-gray-100: var(--color-stone-100);
+  --color-gray-200: var(--color-stone-200);
+  --color-gray-300: var(--color-stone-300);
+  --color-gray-400: var(--color-stone-400);
+  --color-gray-500: var(--color-stone-500);
+  --color-gray-600: var(--color-stone-600);
+  --color-gray-700: var(--color-stone-700);
+  --color-gray-800: var(--color-stone-800);
+  --color-gray-900: #1c1917; /* stone-900 */
+  --color-gray-950: #0c0a09;
+
+  --color-indigo-50: var(--color-orange-50);
+  --color-indigo-100: var(--color-orange-100);
+  --color-indigo-200: var(--color-orange-200);
+  --color-indigo-300: var(--color-orange-300);
+  --color-indigo-400: var(--color-orange-400);
+  --color-indigo-500: var(--color-orange-500);
+  --color-indigo-600: var(--color-orange-600);
+  --color-indigo-700: var(--color-orange-700);
+  --color-indigo-800: var(--color-orange-800);
+  --color-indigo-900: var(--color-orange-900);
+  --color-indigo-950: var(--color-orange-950);
+}
+
+/* Rose (Light mode with rose accents) */
+html.theme-rose {
+  --color-indigo-50: var(--color-rose-50);
+  --color-indigo-100: var(--color-rose-100);
+  --color-indigo-200: var(--color-rose-200);
+  --color-indigo-300: var(--color-rose-300);
+  --color-indigo-400: var(--color-rose-400);
+  --color-indigo-500: var(--color-rose-500);
+  --color-indigo-600: var(--color-rose-600);
+  --color-indigo-700: var(--color-rose-700);
+  --color-indigo-800: var(--color-rose-800);
+  --color-indigo-900: var(--color-rose-900);
+  --color-indigo-950: var(--color-rose-950);
+}
+
+/* Ocean (Light mode with cyan accents) */
+html.theme-ocean {
+  --color-indigo-50: var(--color-cyan-50);
+  --color-indigo-100: var(--color-cyan-100);
+  --color-indigo-200: var(--color-cyan-200);
+  --color-indigo-300: var(--color-cyan-300);
+  --color-indigo-400: var(--color-cyan-400);
+  --color-indigo-500: var(--color-cyan-500);
+  --color-indigo-600: var(--color-cyan-600);
+  --color-indigo-700: var(--color-cyan-700);
+  --color-indigo-800: var(--color-cyan-800);
+  --color-indigo-900: var(--color-cyan-900);
+  --color-indigo-950: var(--color-cyan-950);
+}

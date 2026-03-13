@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model UserSession {
+  id        Int      @id @default(1)
+  session   String
+  updatedAt DateTime @updatedAt
+}
+
+model Group {
+  id        String   @id // Telegram chat ID
+  title     String
+  addedAt   DateTime @default(now())
+  isActive  Boolean  @default(true)
+}
+
+model Message {
+  id            Int      @id @default(autoincrement())
+  content       String
+  isScheduled   Boolean  @default(false)
+  scheduledFor  DateTime?
+  status        String   @default("pending") // pending, sent, failed
+  createdAt     DateTime @default(now())
+  ActivityLog   ActivityLog[]
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  message   Message  @relation(fields: [messageId], references: [id])
+  groupId   String
+  status    String   // success, failed
+  error     String?
+  sentAt    DateTime @default(now())
+}

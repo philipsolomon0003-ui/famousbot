@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+*.db
+*.db-journal
+*.zip
+nodejs/
+nodejs22/
+.tempmediaStorage/
+.system_generated/
+*.log
