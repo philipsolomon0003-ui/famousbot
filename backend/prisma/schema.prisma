@@ -26,6 +26,7 @@ model Message {
   isScheduled   Boolean  @default(false)
   scheduledFor  DateTime?
   status        String   @default("pending") // pending, sent, failed
+  targetGroups  String?  // JSON string array of group IDs
   createdAt     DateTime @default(now())
   ActivityLog   ActivityLog[]
 }

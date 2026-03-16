@@ -2,6 +2,25 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.font-inter body { font-family: 'Inter', system-ui, -apple-system, sans-serif !important; }
+html.font-roboto body { font-family: 'Roboto', system-ui, -apple-system, sans-serif !important; }
+html.font-poppins body { font-family: 'Poppins', system-ui, -apple-system, sans-serif !important; }
+html.font-mono body { font-family: 'JetBrains Mono', monospace !important; }
+html.font-outfit body { font-family: 'Outfit', system-ui, -apple-system, sans-serif !important; }
+html.font-playfair body { font-family: 'Playfair Display', serif !important; }
+html.font-space body { font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif !important; }
+html.font-quicksand body { font-family: 'Quicksand', system-ui, -apple-system, sans-serif !important; }
+
 /* === MULTI-COLOR THEMES === */
 
 /* Midnight (Deep blue backdrops, blue accents) */
@@ -113,4 +132,143 @@ html.theme-ocean {
   --color-indigo-800: var(--color-cyan-800);
   --color-indigo-900: var(--color-cyan-900);
   --color-indigo-950: var(--color-cyan-950);
+}
+
+/* Amethyst (Dark mode with violet/purple accents) */
+html.theme-amethyst {
+  --color-gray-50: #fcfaff;
+  --color-gray-100: #f5f3ff;
+  --color-gray-200: #ede9fe;
+  --color-gray-300: #ddd6fe;
+  --color-gray-400: #c4b5fd;
+  --color-gray-500: #a78bfa;
+  --color-gray-600: #8b5cf6;
+  --color-gray-700: #7c3aed;
+  --color-gray-800: #1e1b4b; /* Deep Indigo/Black base */
+  --color-gray-900: #0f172a;
+  --color-gray-950: #020617;
+
+  --color-indigo-50: var(--color-violet-50);
+  --color-indigo-100: var(--color-violet-100);
+  --color-indigo-200: var(--color-violet-200);
+  --color-indigo-300: var(--color-violet-300);
+  --color-indigo-400: var(--color-violet-400);
+  --color-indigo-500: var(--color-violet-500);
+  --color-indigo-600: var(--color-violet-600);
+  --color-indigo-700: var(--color-violet-700);
+  --color-indigo-800: var(--color-violet-800);
+  --color-indigo-900: var(--color-violet-900);
+  --color-indigo-950: var(--color-violet-950);
+}
+
+/* Forest (Dark mode with green accents) */
+html.theme-forest {
+  --color-gray-50: var(--color-stone-50);
+  --color-gray-100: var(--color-stone-100);
+  --color-gray-200: var(--color-stone-200);
+  --color-gray-300: var(--color-stone-300);
+  --color-gray-400: var(--color-stone-400);
+  --color-gray-500: var(--color-stone-500);
+  --color-gray-600: var(--color-stone-600);
+  --color-gray-700: var(--color-stone-700);
+  --color-gray-800: #064e3b;
+  --color-gray-900: #022c22;
+  --color-gray-950: #011611;
+
+  --color-indigo-50: var(--color-emerald-50);
+  --color-indigo-100: var(--color-emerald-100);
+  --color-indigo-200: var(--color-emerald-200);
+  --color-indigo-300: var(--color-emerald-300);
+  --color-indigo-400: var(--color-emerald-400);
+  --color-indigo-500: var(--color-emerald-500);
+  --color-indigo-600: var(--color-emerald-600);
+  --color-indigo-700: var(--color-emerald-700);
+  --color-indigo-800: var(--color-emerald-800);
+  --color-indigo-900: var(--color-emerald-900);
+  --color-indigo-950: var(--color-emerald-950);
+}
+
+/* Candy (Light mode with pink/fuchsia accents) */
+html.theme-candy {
+  --color-gray-50: var(--color-pink-50);
+  --color-gray-100: var(--color-pink-100);
+  --color-gray-200: var(--color-pink-200);
+  --color-gray-300: var(--color-pink-300);
+  
+  --color-indigo-50: var(--color-fuchsia-50);
+  --color-indigo-100: var(--color-fuchsia-100);
+  --color-indigo-200: var(--color-fuchsia-200);
+  --color-indigo-300: var(--color-fuchsia-300);
+  --color-indigo-400: var(--color-fuchsia-400);
+  --color-indigo-500: var(--color-fuchsia-500);
+  --color-indigo-600: var(--color-fuchsia-600);
+  --color-indigo-700: var(--color-fuchsia-700);
+  --color-indigo-800: var(--color-fuchsia-800);
+  --color-indigo-900: var(--color-fuchsia-900);
+  --color-indigo-950: var(--color-fuchsia-950);
+}
+
+/* Cyberpunk (Dark mode with yellow accents) */
+html.theme-cyberpunk {
+  --color-gray-50: #fef08a;
+  --color-gray-100: #fde047;
+  --color-gray-200: #facc15;
+  --color-gray-300: #eab308;
+  --color-gray-400: #ca8a04;
+  --color-gray-500: #a16207;
+  --color-gray-600: #854d0e;
+  --color-gray-700: #713f12;
+  --color-gray-800: #1a0826;
+  --color-gray-900: #0f0518;
+  --color-gray-950: #08020c;
+
+  --color-indigo-50: var(--color-yellow-50);
+  --color-indigo-100: var(--color-yellow-100);
+  --color-indigo-200: var(--color-yellow-200);
+  --color-indigo-300: var(--color-yellow-300);
+  --color-indigo-400: var(--color-yellow-400);
+  --color-indigo-500: var(--color-yellow-500);
+  --color-indigo-600: var(--color-yellow-500);
+  --color-indigo-700: var(--color-yellow-600);
+  --color-indigo-800: var(--color-yellow-700);
+  --color-indigo-900: var(--color-yellow-800);
+  --color-indigo-950: var(--color-yellow-900);
+}
+
+/* Crimson (Dark mode with red accents) */
+html.theme-crimson {
+  --color-gray-50: var(--color-zinc-50);
+  --color-gray-100: var(--color-zinc-100);
+  --color-gray-200: var(--color-zinc-200);
+  --color-gray-300: var(--color-zinc-300);
+  --color-gray-400: var(--color-zinc-400);
+  --color-gray-500: var(--color-zinc-500);
+  --color-gray-600: var(--color-zinc-600);
+  --color-gray-700: var(--color-zinc-700);
+  --color-gray-800: #18181b;
+  --color-gray-900: #09090b;
+  --color-gray-950: #000000;
+
+  --color-indigo-50: var(--color-red-50);
+  --color-indigo-100: var(--color-red-100);
+  --color-indigo-200: var(--color-red-200);
+  --color-indigo-300: var(--color-red-300);
+  --color-indigo-400: var(--color-red-400);
+  --color-indigo-500: var(--color-red-500);
+  --color-indigo-600: var(--color-red-600);
+  --color-indigo-700: var(--color-red-700);
+  --color-indigo-800: var(--color-red-800);
+  --color-indigo-900: var(--color-red-900);
+  --color-indigo-950: var(--color-red-950);
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+  .glass-card {
+    @apply bg-white/10 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+  }
+  
+  .glass-button {
+    @apply bg-white/20 hover:bg-white/30 backdrop-blur-md border border-white/20 transition-all duration-200;
+  }
 }

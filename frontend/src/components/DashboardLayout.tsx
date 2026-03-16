@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Send, Activity, LogOut, Bot, Palette } from 'lucide-react';
+import { Home, Users, Send, Activity, LogOut, Bot, Palette, Type } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { useTheme } from './ThemeProvider';
@@ -18,7 +18,7 @@ const navItems = [
 export default function DashboardLayout({ setAuth }: { setAuth: (val: boolean) => void }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, font, toggleFont } = useTheme();
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken');
@@ -67,6 +67,15 @@ export default function DashboardLayout({ setAuth }: { setAuth: (val: boolean) =
             <Palette className="mr-3 h-5 w-5 text-indigo-500 dark:text-indigo-400" />
             Theme: {theme}
           </button>
+          
+          <button
+            onClick={toggleFont}
+            className="flex w-full items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors capitalize"
+          >
+            <Type className="mr-3 h-5 w-5 text-indigo-500 dark:text-indigo-400" />
+            Font: {font}
+          </button>
+
           <button
             onClick={handleLogout}
             className="flex w-full items-center px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

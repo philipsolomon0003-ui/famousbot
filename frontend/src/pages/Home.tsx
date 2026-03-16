@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, MessageSquare, Clock, Send, Activity, Settings, Zap, Shield, Sparkles } from 'lucide-react';
+import { Users, MessageSquare, Clock, Send, Activity, Zap, Shield, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Stats {
@@ -9,28 +9,43 @@ interface Stats {
   scheduledMessages: number;
 }
 
+interface ActivityLogItem {
+    id: number;
+    status: string;
+    sentAt: string;
+    message: {
+        content: string;
+    };
+    groupId: string;
+}
+
 export default function Home() {
   const [stats, setStats] = useState<Stats>({ groups: 0, sentMessages: 0, scheduledMessages: 0 });
+  const [activities, setActivities] = useState<ActivityLogItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/stats');
+        const [statsRes, logsRes] = await Promise.all([
+            axios.get('http://localhost:5000/api/stats'),
+            axios.get('http://localhost:5000/api/logs')
+        ]);
         
         setStats({
-          groups: res.data.groups,
-          sentMessages: res.data.sentMessages,
-          scheduledMessages: res.data.scheduledMessages
+          groups: statsRes.data.groups,
+          sentMessages: statsRes.data.sentMessages,
+          scheduledMessages: statsRes.data.scheduledMessages
         });
+        setActivities(logsRes.data.slice(0, 10)); // Take last 10
       } catch (err) {
-        console.error('Failed to fetch stats', err);
+        console.error('Failed to fetch dashboard data', err);
       } finally {
         setLoading(false);
       }
     };
     
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
   const statCards = [
@@ -74,35 +89,61 @@ export default function Home() {
           {/* New Design Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
             {/* Quick Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-200">
-              <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
-                <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center">
-                  <Zap className="h-5 w-5 mr-2 text-indigo-500" />
-                  Quick Actions
-                </h3>
+            <div className="space-y-8">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+                <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-700">
+                  <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white flex items-center">
+                    <Zap className="h-5 w-5 mr-2 text-indigo-500" />
+                    Quick Actions
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-100 dark:divide-gray-700 block text-center">
+                  <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-gray-700">
+                    <Link to="/composer" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group block">
+                      <Send className="h-8 w-8 text-blue-500 group-hover:scale-110 transition-transform mx-auto mb-3" />
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Broadcast</p>
+                    </Link>
+                    <Link to="/groups" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group block">
+                      <Users className="h-8 w-8 text-purple-500 group-hover:scale-110 transition-transform mx-auto mb-3" />
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">Groups</p>
+                    </Link>
+                  </div>
+                </div>
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-700 block">
-                <div className="grid grid-cols-2 gap-px bg-gray-100 dark:bg-gray-700">
-                   <Link to="/composer" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
-                     <Send className="h-8 w-8 text-blue-500 group-hover:scale-110 transition-transform mb-3" />
-                     <p className="text-sm font-medium text-gray-900 dark:text-white">Broadcast Message</p>
-                     <p className="text-xs text-gray-500 mt-1">Send to all groups</p>
-                   </Link>
-                   <Link to="/groups" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
-                     <Users className="h-8 w-8 text-purple-500 group-hover:scale-110 transition-transform mb-3" />
-                     <p className="text-sm font-medium text-gray-900 dark:text-white">Manage Groups</p>
-                     <p className="text-xs text-gray-500 mt-1">Search and join</p>
-                   </Link>
-                   <Link to="/activity" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block">
-                     <Activity className="h-8 w-8 text-green-500 group-hover:scale-110 transition-transform mb-3" />
-                     <p className="text-sm font-medium text-gray-900 dark:text-white">View Logs</p>
-                     <p className="text-xs text-gray-500 mt-1">Check past broadcasts</p>
-                   </Link>
-                   <Link to="#" className="bg-white dark:bg-gray-800 p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors group block cursor-not-allowed opacity-80">
-                     <Settings className="h-8 w-8 text-orange-500 group-hover:scale-110 transition-transform mb-3 opacity-50" />
-                     <p className="text-sm font-medium text-gray-900 dark:text-white">Settings</p>
-                     <p className="text-xs text-gray-500 mt-1">Coming soon</p>
-                   </Link>
+
+              {/* Activity Feed */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-200">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                   <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider flex items-center">
+                     <Activity className="h-4 w-4 mr-2 text-green-500" />
+                     Live Activity
+                   </h3>
+                   <Link to="/activity" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">View All</Link>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto divide-y divide-gray-50 dark:divide-gray-700/50">
+                   {activities.length === 0 ? (
+                       <div className="p-8 text-center text-sm text-gray-500">No recent activity</div>
+                   ) : (
+                       activities.map((item) => (
+                           <div key={item.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                               <div className="flex justify-between items-start">
+                                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
+                                       {item.message.content || 'No content'}
+                                   </p>
+                                   <span className={`px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold uppercase ${
+                                       item.status === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                   }`}>
+                                       {item.status}
+                                   </span>
+                               </div>
+                               <div className="mt-1 flex items-center text-[10px] text-gray-500 dark:text-gray-400 space-x-2">
+                                   <span>{new Date(item.sentAt).toLocaleTimeString()}</span>
+                                   <span>•</span>
+                                   <span className="truncate">Group: {item.groupId}</span>
+                               </div>
+                           </div>
+                       ))
+                   )}
                 </div>
               </div>
             </div>

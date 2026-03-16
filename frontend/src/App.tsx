@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import DashboardLayout from './components/DashboardLayout';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -13,9 +14,7 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('adminToken');
     if (token) {
-      import('axios').then(axios => {
-        axios.default.defaults.headers.common['x-admin-token'] = token;
-      });
+      axios.defaults.headers.common['x-admin-token'] = token;
       setIsAuthenticated(true);
     }
   }, []);

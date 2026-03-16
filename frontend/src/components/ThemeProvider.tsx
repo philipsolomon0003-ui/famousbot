@@ -1,11 +1,18 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export const THEMES = ['light', 'dark', 'midnight', 'hacker', 'sunset', 'rose', 'ocean'] as const;
+export const THEMES = ['light', 'dark', 'midnight', 'hacker', 'sunset', 'rose', 'ocean', 'amethyst', 'forest', 'candy', 'cyberpunk', 'crimson'] as const;
 export type Theme = typeof THEMES[number];
+
+export const FONTS = ['inter', 'roboto', 'poppins', 'mono', 'outfit', 'playfair', 'space', 'quicksand'] as const;
+export type Font = typeof FONTS[number];
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setTheme: (t: Theme) => void;
+  font: Font;
+  toggleFont: () => void;
+  setFont: (f: Font) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -23,13 +30,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return 'light';
   });
 
+  const [font, setFontState] = useState<Font>(() => {
+    const savedFont = localStorage.getItem('font');
+    if (savedFont && FONTS.includes(savedFont as Font)) {
+      return savedFont as Font;
+    }
+    return 'inter';
+  });
+
   useEffect(() => {
     const root = window.document.documentElement;
     // Remove all previous theme variables
-    root.classList.remove('light', 'dark', 'theme-midnight', 'theme-hacker', 'theme-sunset', 'theme-rose', 'theme-ocean');
+    root.classList.remove('light', 'dark', 'theme-midnight', 'theme-hacker', 'theme-sunset', 'theme-rose', 'theme-ocean', 'theme-amethyst', 'theme-forest', 'theme-candy', 'theme-cyberpunk', 'theme-crimson');
     
     // Apply core dark mode base if it's a dark variant
-    const isDark = ['dark', 'midnight', 'hacker', 'sunset'].includes(theme);
+    const isDark = ['dark', 'midnight', 'hacker', 'sunset', 'amethyst', 'forest', 'cyberpunk', 'crimson'].includes(theme);
     if (isDark) {
       root.classList.add('dark');
     }
@@ -42,6 +57,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  // Handle Font logic
+  useEffect(() => {
+    const root = window.document.documentElement;
+    // Remove all previous font classes
+    root.classList.remove('font-inter', 'font-roboto', 'font-poppins', 'font-mono', 'font-outfit', 'font-playfair', 'font-space', 'font-quicksand');
+    
+    // Add explicitly chosen font
+    root.classList.add(`font-${font}`);
+    localStorage.setItem('font', font);
+  }, [font]);
+
   const toggleTheme = () => {
     setTheme((prev) => {
       const idx = THEMES.indexOf(prev);
@@ -49,8 +75,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const toggleFont = () => {
+    setFontState((prev) => {
+      const idx = FONTS.indexOf(prev);
+      return FONTS[(idx + 1) % FONTS.length];
+    });
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, font, toggleFont, setFont: setFontState }}>
       {children}
     </ThemeContext.Provider>
   );

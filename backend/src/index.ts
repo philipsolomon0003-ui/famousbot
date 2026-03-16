@@ -27,6 +27,15 @@ const requireAuth = (req: Request, res: Response, next: express.NextFunction) =>
     }
 }
 
+// In-memory broadcast progress tracking
+interface Progress {
+    total: number;
+    sent: number;
+    failed: number;
+    status: 'broadcasting' | 'completed' | 'failed';
+}
+const broadcastProgress = new Map<number, Progress>();
+
 // ----------------------------------------------------
 // AUTHENTICATION ROUTES (Replacing strict password login)
 // ----------------------------------------------------
@@ -55,6 +64,8 @@ app.post('/api/auth/sign-in', async (req, res) => {
         const { phoneNumber, phoneCodeHash, code } = req.body;
         const success = await signIn(phoneNumber, phoneCodeHash, code);
         if (success) {
+            cachedGroups = null;
+            lastGroupsFetchTime = 0;
             res.json({ token: ADMIN_TOKEN });
         } else {
             res.status(401).json({ error: 'Invalid code' });
@@ -68,6 +79,8 @@ app.post('/api/auth/sign-in', async (req, res) => {
 app.post('/api/auth/logout', requireAuth, async (req, res) => {
     try {
         await logout();
+        cachedGroups = null;
+        lastGroupsFetchTime = 0;
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: 'Failed to logout' });
@@ -85,14 +98,18 @@ const GROUPS_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 app.get('/api/groups', requireAuth, async (req, res) => {
     try {
         const now = Date.now();
-        // Return cached groups if valid
-        if (cachedGroups && (now - lastGroupsFetchTime < GROUPS_CACHE_DURATION)) {
+        const refresh = req.query.refresh === 'true';
+
+        // Return cached groups if valid and not refreshing
+        if (!refresh && cachedGroups && (now - lastGroupsFetchTime < GROUPS_CACHE_DURATION)) {
             return res.json(cachedGroups);
         }
 
         const client = await getClient();
         console.log('Fetching fresh dialogs from Telegram...');
-        const dialogs = await client.getDialogs({});
+        // Pass limit: undefined to fetch ALL dialogs, not just the default 100
+        const dialogs = await client.getDialogs({ limit: undefined });
+        console.log(`[API /groups] GramJS returned ${dialogs.length} dialog entities.`);
         
         // Filter out groups, channels, and users (bots)
         const groups = dialogs
@@ -177,22 +194,78 @@ app.post('/api/groups/search', requireAuth, async (req, res) => {
         }
 
         const client = await getClient();
+        console.log(`[API /search] Searching for: ${query}`);
         
-        // Search Telegram contacts/global search for the keyword
-        const searchResult = await client.invoke(new Api.contacts.Search({
-            q: query,
-            limit: 50
-        }));
+        const chatsMap = new Map<string, any>();
+
+        try {
+            // 1. Regular contacts search (Finds exact name matches, limit ~10)
+            const searchResult = await client.invoke(new Api.contacts.Search({
+                q: query,
+                limit: 100
+            }));
+            
+            if (searchResult.chats) {
+                for (const chat of searchResult.chats) {
+                    chatsMap.set(chat.id.toString(), chat);
+                }
+            }
+        } catch (e) {
+            console.error('contacts.Search error:', e);
+        }
+
+        try {
+            // 2. Global message search (Finds recently active groups mentioning the keyword)
+            // This bypasses the strict ~10 limit and returns "latest" active groups.
+            const msgResult: any = await client.invoke(new Api.messages.SearchGlobal({
+                q: query,
+                filter: new Api.InputMessagesFilterEmpty(),
+                minDate: 0,
+                maxDate: 0,
+                offsetRate: 0,
+                offsetPeer: new Api.InputPeerEmpty(),
+                offsetId: 0,
+                limit: 80 // Limit to 80 to prevent timeout
+            }));
+            
+            if (msgResult.chats) {
+                for (const chat of msgResult.chats) {
+                    chatsMap.set(chat.id.toString(), chat);
+                }
+            }
+        } catch (e) {
+             console.error('messages.SearchGlobal error:', e);
+        }
+
+        const uniqueChats = Array.from(chatsMap.values());
+        console.log(`[API /search] Found ${uniqueChats.length} unique chats`);
 
         // Filter and map the results to a consistent format
-        const results = searchResult.chats.map((chat: any) => {
+        const results = uniqueChats.map((chat: any) => {
             let type = 'unknown';
-            if (chat.className === 'Channel') type = 'channel';
-            else if (chat.className === 'Chat') type = 'group';
+            
+            // Analyze the GramJS entity to determine its type
+            if (chat.className === 'Channel') {
+                // In MTProto, Megagroups (supergroups) use the Channel class
+                if (chat.megagroup) {
+                    type = 'group';
+                } else {
+                    type = 'channel';
+                }
+            } else if (chat.className === 'Chat') {
+                // Standard basic groups
+                type = 'group';
+            } else if (chat.className === 'User') {
+                if (chat.bot) {
+                    type = 'bot';
+                } else {
+                    type = 'user';
+                }
+            }
             
             return {
                 id: chat.id?.toString(),
-                title: chat.title || chat.username || 'Unknown',
+                title: chat.title || chat.username || chat.firstName || 'Unknown',
                 username: chat.username,
                 type: type,
                 participantsCount: chat.participantsCount || 0
@@ -205,16 +278,22 @@ app.post('/api/groups/search', requireAuth, async (req, res) => {
         res.status(500).json({ error: error.message || 'Failed to search Telegram' });
     }
 });
-
 app.post('/api/messages', requireAuth, async (req, res) => {
-    const { content, isScheduled, scheduledFor } = req.body;
+    const { content, isScheduled, scheduledFor, targetGroups } = req.body;
     
+    // Validate targetGroups if provided
+    let targetGroupsStr = null;
+    if (targetGroups && Array.isArray(targetGroups) && targetGroups.length > 0) {
+        targetGroupsStr = JSON.stringify(targetGroups);
+    }
+
     const message = await prisma.message.create({
         data: {
             content,
             isScheduled: isScheduled || false,
             scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
-            status: isScheduled ? 'pending' : 'broadcasting'
+            status: isScheduled ? 'pending' : 'broadcasting',
+            targetGroups: targetGroupsStr
         }
     });
 
@@ -226,6 +305,17 @@ app.post('/api/messages', requireAuth, async (req, res) => {
     res.json(message);
 });
 
+app.get('/api/progress/:messageId', requireAuth, (req: Request, res: Response) => {
+    const messageId = parseInt(req.params.messageId as string);
+    const progress = broadcastProgress.get(messageId);
+    
+    if (!progress) {
+        return res.status(404).json({ error: 'Progress not found' });
+    }
+    
+    res.json(progress);
+});
+
 app.get('/api/logs', requireAuth, async (req, res) => {
     const logs = await prisma.activityLog.findMany({
         include: { message: true },
@@ -233,6 +323,16 @@ app.get('/api/logs', requireAuth, async (req, res) => {
         take: 100
     });
     res.json(logs);
+});
+
+app.delete('/api/logs', requireAuth, async (req, res) => {
+    try {
+        await prisma.activityLog.deleteMany();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to clear logs:', error);
+        res.status(500).json({ error: 'Failed to clear logs' });
+    }
 });
 
 // ----------------------------------------------------
@@ -251,7 +351,8 @@ app.get('/api/stats', requireAuth, async (req, res) => {
             // If not cached, we have to fetch (this will be slow the first time, but we populate the cache)
             const client = await getClient();
             console.log('Fetching fresh dialogs from Telegram for stats...');
-            const dialogs = await client.getDialogs({});
+            const dialogs = await client.getDialogs({ limit: undefined });
+            console.log(`[Stats] GramJS returned ${dialogs.length} dialog entities.`);
             
             const groups = dialogs.filter(d => d.isGroup || d.isChannel || d.isUser);
             groupsCount = groups.length;
@@ -279,6 +380,20 @@ app.get('/api/stats', requireAuth, async (req, res) => {
 });
 
 // ----------------------------------------------------
+// ANTI-BAN UTILITIES
+// ----------------------------------------------------
+
+/**
+ * Parses spintax like "{Hello|Hi|Greetings} there!" into a random selection.
+ */
+function spinText(text: string): string {
+    return text.replace(/{([^{}]+)}/g, (match, contents) => {
+        const options = contents.split('|');
+        return options[Math.floor(Math.random() * options.length)];
+    });
+}
+
+// ----------------------------------------------------
 // BROADCASTING LOGIC
 // ----------------------------------------------------
 
@@ -288,24 +403,82 @@ async function broadcastMessage(messageId: number) {
         if (!message) return;
 
         const client = await getClient();
-        const dialogs = await client.getDialogs({});
-        const groups = dialogs.filter(d => d.isGroup || d.isChannel);
+        console.log('Fetching fresh dialogs for broadcast...');
+        const dialogs = await client.getDialogs({ limit: undefined });
         
+        // Include ONLY groups. Skip channels (users can't broadcast to them) and bots/users.
+        let groups = dialogs.filter((d: any) => d.isGroup === true);
+        
+        // Filter by specific target groups if specified in the message
+        if (message.targetGroups) {
+            try {
+                const targetIds: string[] = JSON.parse(message.targetGroups);
+                if (targetIds.length > 0) {
+                    groups = groups.filter(g => g.id && targetIds.includes(g.id.toString()));
+                }
+            } catch (e) {
+                console.error('Failed to parse targetGroups for message', messageId, e);
+            }
+        }
+        
+        // Initialize progress
+        broadcastProgress.set(messageId, {
+            total: groups.length,
+            sent: 0,
+            failed: 0,
+            status: 'broadcasting'
+        });
+
         // If there are no groups found, mark as failed immediately
         if (groups.length === 0) {
             console.log('No groups found for broadcasting.');
+            broadcastProgress.set(messageId, { total: 0, sent: 0, failed: 0, status: 'completed' });
             await prisma.message.update({ where: { id: messageId }, data: { status: 'failed' }});
             return;
         }
 
         let successCount = 0;
+        let messagesSentSinceLastLongPause = 0;
         
+        // Anti-Ban: Dynamic Delay Base (starts fast, gets slower)
+        let baseDelayMs = 3000;
+        
+        // Anti-Ban: Randomize the coffee break threshold (15-25 messages)
+        let nextCoffeeBreakAt = Math.floor(Math.random() * 11) + 15;
+
         for (const group of groups) {
             if (!group.id) continue;
             
             try {
-                await client.sendMessage(group.id, { message: message.content });
+                // Anti-Ban feature 1: Dynamic randomized delay that ramps up
+                // To prevent detection, the delay slowly increases as we send more messages.
+                baseDelayMs = Math.min(baseDelayMs + 250, 15000); // Ramps up to a max 15s base delay
                 
+                let randomDelay = baseDelayMs + Math.floor(Math.random() * 5000);
+
+                // Anti-Ban feature 4: Nighttime Throttling Check
+                // If the user's local server time is between 2 AM and 6 AM, double the delays
+                const currentHour = new Date().getHours();
+                if (currentHour >= 2 && currentHour <= 6) {
+                     console.log(`[Anti-Ban] Late night hours detected. Doubling delay times to appear normal.`);
+                     randomDelay *= 2;
+                }
+
+                console.log(`[Anti-Ban] Waiting ${randomDelay}ms before next message...`);
+                await new Promise(resolve => setTimeout(resolve, randomDelay));
+
+                // Anti-Ban feature 5: Spintax parsing
+                const finalMessage = spinText(message.content);
+
+                await client.sendMessage(group.id, { message: finalMessage });
+                
+                // Update progress
+                const p = broadcastProgress.get(messageId);
+                if (p) {
+                    p.sent++;
+                    broadcastProgress.set(messageId, { ...p });
+                }
+
                 await prisma.activityLog.create({
                     data: {
                         messageId: message.id,
@@ -314,12 +487,44 @@ async function broadcastMessage(messageId: number) {
                     }
                 });
                 successCount++;
+                messagesSentSinceLastLongPause++;
                 console.log(`Sent message to ${group.title}`);
                 
-                // Rate limiting logic: sleep 1.5 seconds between sends
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                // Anti-Ban feature 2: Take a long pause at randomized intervals
+                if (messagesSentSinceLastLongPause >= nextCoffeeBreakAt) {
+                    const longPause = Math.floor(Math.random() * 60000) + 60000; // 1m to 2m pause
+                    console.log(`[Anti-Ban] Taking a long coffee break of ${longPause}ms to avoid spam detection...`);
+                    await new Promise(resolve => setTimeout(resolve, longPause));
+                    messagesSentSinceLastLongPause = 0;
+                    
+                    // Pick a new random threshold for the next break
+                    nextCoffeeBreakAt = Math.floor(Math.random() * 11) + 15;
+                    
+                    // Reset the dynamic delay base, simulating a fresh start after a break
+                    baseDelayMs = 3000;
+                }
+
             } catch (error: any) {
                 console.error(`Failed to send to ${group.title}:`, error.message);
+                
+                // Anti-Ban feature 3: Respect Telegram's explicit "Flood Wait" requests
+                if (error.message.includes('FLOOD_WAIT') || error.message.includes('A wait of')) {
+                    // Extract the number of seconds to wait from the error message string (e.g. "A wait of 45 seconds is required")
+                    const match = error.message.match(/(\d+)/);
+                    if (match && match[1]) {
+                        const secondsToWait = parseInt(match[1]);
+                        console.log(`[Anti-Ban] Telegram requested a cooldown. Sleeping for ${secondsToWait} seconds...`);
+                        await new Promise(resolve => setTimeout(resolve, (secondsToWait + 5) * 1000)); // Add 5s buffer
+                    }
+                }
+
+                // Update progress
+                const p = broadcastProgress.get(messageId);
+                if (p) {
+                    p.failed++;
+                    broadcastProgress.set(messageId, { ...p });
+                }
+
                 await prisma.activityLog.create({
                     data: {
                         messageId: message.id,
@@ -330,6 +535,11 @@ async function broadcastMessage(messageId: number) {
                 });
             }
         }
+
+        broadcastProgress.set(messageId, {
+            ...broadcastProgress.get(messageId)!,
+            status: 'completed'
+        });
 
         await prisma.message.update({
             where: { id: message.id },
